@@ -1,10 +1,18 @@
 import os
+
+import PIL.Image
+import torch
+from tqdm import tqdm
+import sys
+sys.path.append("..")
 from config import cfg
 import argparse
 from datasets import make_dataloader
 from model import make_model
 from processor import do_inference
 from utils.logger import setup_logger
+import torchvision.transforms as T
+import numpy as np
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
@@ -37,30 +45,41 @@ if __name__ == "__main__":
 
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID
 
-    train_loader, train_loader_normal, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
 
+    val_transforms = T.Compose([
+        T.Resize(cfg.INPUT.SIZE_TEST),
+        T.ToTensor(),
+        T.Normalize(mean=cfg.INPUT.PIXEL_MEAN, std=cfg.INPUT.PIXEL_STD)
+    ])
+
+    num_classes = 457
+    camera_num = 9
+    view_num = 1
     model = make_model(cfg, num_class=num_classes, camera_num=camera_num, view_num = view_num)
     model.load_param(cfg.TEST.WEIGHT)
+    model.eval()
+    model = model.cuda()
 
-    if cfg.DATASETS.NAMES == 'VehicleID':
-        for trial in range(10):
-            train_loader, train_loader_normal, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
-            rank_1, rank5 = do_inference(cfg,
-                 model,
-                 val_loader,
-                 num_query)
-            if trial == 0:
-                all_rank_1 = rank_1
-                all_rank_5 = rank5
-            else:
-                all_rank_1 = all_rank_1 + rank_1
-                all_rank_5 = all_rank_5 + rank5
+    gallery = "/home/mscherbina/Documents/github_repos/centroids-reid/data/gallery-subfolders"
+    pids = os.listdir(gallery)
+    pids = [p for p in pids if os.path.isdir(os.path.join(gallery, p))]
+    pids.sort()
+    path_embeddings = {}
 
-            logger.info("rank_1:{}, rank_5 {} : trial : {}".format(rank_1, rank5, trial))
-        logger.info("sum_rank_1:{:.1%}, sum_rank_5 {:.1%}".format(all_rank_1.sum()/10.0, all_rank_5.sum()/10.0))
-    else:
-       do_inference(cfg,
-                 model,
-                 val_loader,
-                 num_query)
+    for pid in tqdm(pids):
+        pid_path = os.path.join(gallery, pid)
+        images = os.listdir(pid_path)
+        images = [os.path.join(pid_path, i) for i in images]
+        images.sort()
+        for path in images:
+            image = PIL.Image.open(path)
+            image = val_transforms(image)
+            image = image.unsqueeze(0).cuda()
+            with torch.autocast(enabled=True, device_type="cuda"):
+                embedding = model(image)
+            embedding = embedding.detach().cpu().numpy()[0]
+            path_embeddings[path] = embedding
+
+    np.save("/home/mscherbina/Documents/github_repos/PASS-reID/PASS_transreid/inference/output-dir/path_embeddings.npy", path_embeddings)
+
 

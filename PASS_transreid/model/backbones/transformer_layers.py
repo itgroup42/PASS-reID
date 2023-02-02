@@ -2,7 +2,7 @@ import math
 import os.path as osp
 import torch
 from torch import nn as nn
-from torch._six import container_abcs
+from collections import abc as container_abcs
 from functools import partial
 from itertools import repeat
 from torch.nn import functional as F
@@ -20,7 +20,7 @@ to_2tuple = _ntuple(2)
 class PatchEmbed(nn.Module):
     """ 2D Image to Patch Embedding
     """
-    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768, norm_layer=None):
+    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=512, norm_layer=None):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)

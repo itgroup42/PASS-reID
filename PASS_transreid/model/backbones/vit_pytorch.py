@@ -27,7 +27,7 @@ from itertools import repeat
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch._six import container_abcs
+from collections import abc as container_abcs
 
 
 # From PyTorch internals
@@ -386,9 +386,10 @@ class TransReID(nn.Module):
                 self.state_dict()[k].copy_(v)
                 print(k, 'copied')
                 count +=1
-            except:
+            except Exception as e:
                 print('===========================ERROR=========================')
-                print('shape do not match in k :{}: param_dict{} vs self.state_dict(){}'.format(k, v.shape, self.state_dict()[k].shape))
+                print('shape do not match in k :{}: param_dict{}'.format(k, v.shape))
+                pass
         print('Load %d / %d layers.'%(count,len(self.state_dict().keys())))
 
 

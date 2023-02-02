@@ -1,5 +1,5 @@
 MODEL:
-  PRETRAIN_PATH: '../../model/vit_small_lup.pth'
+  PRETRAIN_PATH: '/home/mscherbina/Documents/github_repos/PASS-reID/models/pass_vit_base_full.pth'
   PRETRAIN_HW_RATIO: 2
   METRIC_LOSS_TYPE: 'triplet'
   IF_LABELSMOOTH: 'off'
@@ -23,7 +23,7 @@ INPUT:
 
 DATASETS:
   NAMES: ('market1501')
-  ROOT_DIR: ('/userhome/zhukuan/data/')
+  ROOT_DIR: ('/home/mscherbina/Documents/github_repos/PASS-reID/data')
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
@@ -40,17 +40,17 @@ SOLVER:
   LARGE_FC_LR: False
   CHECKPOINT_PERIOD: 120
   LOG_PERIOD: 20
-  EVAL_PERIOD: 120
+  EVAL_PERIOD: 10
   WEIGHT_DECAY:  1e-4
   WEIGHT_DECAY_BIAS: 1e-4
   BIAS_LR_FACTOR: 2
 
 TEST:
   EVAL: True
-  IMS_PER_BATCH: 256
+  IMS_PER_BATCH: 64
   RE_RANKING: False
   WEIGHT: ''
   NECK_FEAT: 'before'
   FEAT_NORM: 'yes'
 
-OUTPUT_DIR: '../../log/transreid/market/vit_base_lup'
+OUTPUT_DIR: './log/transreid/market/vit_small_lup'

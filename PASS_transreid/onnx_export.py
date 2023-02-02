@@ -1,10 +1,14 @@
 import os
+
+import torch
+
 from config import cfg
 import argparse
 from datasets import make_dataloader
 from model import make_model
 from processor import do_inference
 from utils.logger import setup_logger
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
@@ -36,31 +40,11 @@ if __name__ == "__main__":
     logger.info("Running with config:\n{}".format(cfg))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID
-
     train_loader, train_loader_normal, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
-
     model = make_model(cfg, num_class=num_classes, camera_num=camera_num, view_num = view_num)
     model.load_param(cfg.TEST.WEIGHT)
-
-    if cfg.DATASETS.NAMES == 'VehicleID':
-        for trial in range(10):
-            train_loader, train_loader_normal, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
-            rank_1, rank5 = do_inference(cfg,
-                 model,
-                 val_loader,
-                 num_query)
-            if trial == 0:
-                all_rank_1 = rank_1
-                all_rank_5 = rank5
-            else:
-                all_rank_1 = all_rank_1 + rank_1
-                all_rank_5 = all_rank_5 + rank5
-
-            logger.info("rank_1:{}, rank_5 {} : trial : {}".format(rank_1, rank5, trial))
-        logger.info("sum_rank_1:{:.1%}, sum_rank_5 {:.1%}".format(all_rank_1.sum()/10.0, all_rank_5.sum()/10.0))
-    else:
-       do_inference(cfg,
-                 model,
-                 val_loader,
-                 num_query)
+    model.eval()
+    input_sample = torch.randn((8, 3, 256, 128))
+    torch.onnx.export(model, input_sample, "./models/onnx_model.onnx", export_params=True, input_names=['input'],
+                      output_names=['output'], opset_version=11, verbose=True)
 

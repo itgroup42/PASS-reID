@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  export:
+    container_name: pass-export
+    build:
+      context: .
+      shm_size: 16gb
+      dockerfile: Dockerfile
+
+    volumes:
+      - ./:/workspace/pass
+    image: passbuild:latest
+    working_dir: /workspace/pass
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    command: python -m PASS_transreid.inference.onnx_to_trt.py --onnx_path ./PASS_transreid/models/onnx_model.onnx --trt_path ./PASS_transreid/models/trt_model.engine
